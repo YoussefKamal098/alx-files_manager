@@ -1,3 +1,4 @@
+import express from 'express';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { hashPasswordSha1 } from '../utils/hashUtils';
@@ -11,8 +12,9 @@ class UsersController {
      * Expects an email and password in the request body.
      * Responds with appropriate error messages or the created user object.
      *
-     * @param {Object} req - The Express request object.
-     * @param {Object} res - The Express response object.
+     * @param {express.Request} req - The Express request object.
+     * @param {express.Response} res - The Express response object.
+     * @returns {Promise<express.Response>} Express response object
      */
   static async postNew(req, res) {
     const { email, password } = req.body;
@@ -53,8 +55,9 @@ class UsersController {
   /**
    * Retrieves the authenticated user's details based on the token.
    *
-   * @param {Object} req - Express request object.
-   * @param {Object} res - Express response object.
+   * @param {express.Request} req - Express request object
+   * @param {express.Response} res - Express response object
+   * @returns {Promise<express.Response>} Express response object
    */
   static async getMe(req, res) {
     const { userId } = req;

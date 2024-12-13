@@ -1,3 +1,4 @@
+import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
@@ -12,8 +13,9 @@ class AuthController {
      * Signs in a user by generating an authentication token.
      * Expects Authorization header with Basic Auth credentials (Base64 encoded).
      *
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
+     * @param {express.Request} req - Express request object
+     * @param {express.Response} res - Express response object
+     * @returns {Promise<express.Response>} Express response object
      */
   static async getConnect(req, res) {
     const authHeader = req.headers.authorization;
@@ -52,8 +54,9 @@ class AuthController {
   /**
      * Signs out the user by removing the token from Redis.
      *
-     * @param {Object} req - Express request object.
-     * @param {Object} res - Express response object.
+     * @param {express.Request} req - Express request object
+     * @param {express.Response} res - Express response object
+     * @returns {Promise<express.Response>} Express response object
      */
   static async getDisconnect(req, res) {
     const token = req.headers['x-token'];

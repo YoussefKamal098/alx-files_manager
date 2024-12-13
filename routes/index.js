@@ -2,6 +2,7 @@ import express from 'express';
 import AppController from '../controllers/AppController';
 import AuthController from '../controllers/AuthController';
 import UsersController from '../controllers/UsersController';
+import FilesController from '../controllers/FilesController';
 import authenticate from '../middleware/auth';
 
 const router = express.Router();
@@ -16,9 +17,11 @@ router.get('/connect', AuthController.getConnect);
 // GET /disconnect - AuthController.getDisconnect
 router.get('/disconnect', authenticate, AuthController.getDisconnect);
 
-// New endpoint to create a user
+// Endpoint to create a user
 router.post('/users', UsersController.postNew);
 // GET /users/me - UsersController.getMe
 router.get('/users/me', authenticate, UsersController.getMe);
+
+router.post('/files', FilesController.postUpload);
 
 export default router;
