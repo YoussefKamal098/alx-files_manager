@@ -16,8 +16,12 @@ class DBClient {
   // Initialize MongoDB connection
   async connect() {
     try {
-      const uri = `mongodb://${this.host}:${this.port}/${this.database}`;
-      this.client = new MongoClient(uri, { useUnifiedTopology: true, useNewUrlParser: true });
+      const uri = `mongodb://${this.host}:${this.port}`;
+      this.client = new MongoClient(uri, {
+        useUnifiedTopology: true,
+        useNewUrlParser: true
+      });
+
       await this.client.connect();
       this.db = this.client.db(this.database);
     } catch (error) {
