@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 import { verifyPasswordSha1 } from '../utils/hashUtils';
-import  { decodeAuthHeader } from '../utils/authUtils';
+import { decodeBasicAuthHeader } from '../utils/authUtils';
 
 /**
  * AuthController handles user authentication logic.
@@ -19,14 +19,19 @@ class AuthController {
      */
   static async getConnect(req, res) {
     const authHeader = req.headers.authorization;
+    let password;
+    let email;
 
-    if (!authHeader || !authHeader.startsWith('Basic ')) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    try {
+      // Decode email and password from the Authorization header
+      const { decodedEmail, decodedPassword } = decodeBasicAuthHeader(authHeader);
 
-    // Decode email and password from the Authorization header
-    const { email, password } = decodeAuthHeader(authHeader);
-    if (!email || !password) {
+      if (!decodedEmail || !decodedPassword) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      [email, password] = [decodedEmail, decodedPassword];
+    } catch (err) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

@@ -19,9 +19,11 @@ class FilesController {
      */
   static async postUpload(req, res) {
     const { userId } = req;
-    const {
-      name, type, parentId = ROOT_FOLDER_ID, isPublic = false, data,
+    let {
+      name, type, parentId= ROOT_FOLDER_ID, isPublic = false, data,
     } = req.body;
+
+    parentId = parentId.toString();
 
     // Validate request parameters
     const validation = validateFileRequest({ name, type, data });

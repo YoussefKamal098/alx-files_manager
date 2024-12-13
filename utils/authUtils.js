@@ -1,8 +1,8 @@
 /**
  * Decoded credentials structure.
  * @typedef {Object} DecodedCredentials
- * @property {string} email - The email extracted from the authorization header.
- * @property {string} password - The password extracted from the authorization header.
+ * @property {string} decodedEmail - The email extracted from the authorization header.
+ * @property {string} decodedPassword - The password extracted from the authorization header.
  */
 
 /**
@@ -12,7 +12,7 @@
  * @returns {DecodedCredentials} An object containing the email and password.
  * @throws {Error} If the authorization header is invalid or missing.
  */
-function decodeAuthHeader(authHeader) {
+function decodeBasicAuthHeader(authHeader) {
   if (!authHeader || !authHeader.startsWith('Basic ')) {
     throw new Error('Invalid Authorization header');
   }
@@ -28,7 +28,7 @@ function decodeAuthHeader(authHeader) {
   const email = decodedCredentials.substring(0, sepPos);
   const password = decodedCredentials.substring(sepPos + 1);
 
-  return { email, password };
+  return { decodedEmail: email, decodedPassword: password };
 }
 
-export { decodeAuthHeader };
+export { decodeBasicAuthHeader };
