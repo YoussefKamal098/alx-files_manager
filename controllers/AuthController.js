@@ -1,7 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
-import { verifyPassword } from '../utils/hashUtils';
+import { verifyPasswordSha1 } from '../utils/hashUtils';
+import { decodeAuthHeader } from "../utils/authUtils";
 
 /**
  * AuthController handles user authentication logic.
@@ -21,14 +22,8 @@ class AuthController {
       return res.status(400).json({ error: 'Bad request' });
     }
 
-    // Decode the Base64 encoded email:password
-    const base64Credentials = authHeader.split(' ')[1]; // Extract credentials after 'Basic '
-    const decodedCredentials = Buffer.from(base64Credentials, 'base64').toString('utf-8');
-    // Extract password and email
-    const sepPos = decodedCredentials.indexOf(':');
-    const email = decodedCredentials.substring(0, sepPos);
-    const password = decodedCredentials.substring(sepPos + 1);
-
+    // Decode email and password from the Authorization header
+    const { email, password } = decodeAuthHeader(authHeader);
     if (!email || !password) {
       return res.status(400).json({ error: 'Bad request' });
     }
@@ -42,7 +37,7 @@ class AuthController {
     }
 
     // Hash the provided password and compare it with the stored password
-    if (!verifyPassword(password, existingUser.password)) {
+    if (!verifyPasswordSha1(password, existingUser.password)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 

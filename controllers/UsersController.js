@@ -1,5 +1,6 @@
-import { hashPassword } from '../utils/hashUtils';
+import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
+import { hashPasswordSha1 } from '../utils/hashUtils';
 
 /**
  * UsersController handles the creation of users and related logic.
@@ -34,7 +35,7 @@ class UsersController {
     }
 
     // Hash the password using the utility function
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = hashPasswordSha1(password);
 
     // Create the new user object
     const newUser = { email, password: hashedPassword };
@@ -63,8 +64,8 @@ class UsersController {
     }
 
     // Find the user by userId
-    const usersCollection = dbClient.db.collection('users');
-    const user = await usersCollection.findOne({ _id: userId });
+    const usersCollection = await dbClient.usersCollection();
+    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
 
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });

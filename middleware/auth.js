@@ -13,6 +13,7 @@ const authenticate = async (req, res, next) => {
   try {
     // Check if the token exists in Redis
     const userId = await redisClient.get(`auth_${token}`);
+
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

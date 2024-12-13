@@ -6,7 +6,7 @@ import crypto from 'crypto';
  * @param {string} password - The password to hash.
  * @returns {string} - The hashed password.
  */
-export function hashPassword(password) {
+export function hashPasswordSha1(password) {
   return crypto.createHash('sha1').update(password).digest('hex');
 }
 
@@ -17,7 +17,7 @@ export function hashPassword(password) {
  * @param {string} hashedPassword - The hashed password to compare against.
  * @returns {boolean} - Returns true if the passwords match, false otherwise.
  */
-export function verifyPassword(password, hashedPassword) {
-  const hashedInput = hashPassword(password);
+export function verifyPasswordSha1(password, hashedPassword) {
+  const hashedInput = hashPasswordSha1(password);
   return hashedInput === hashedPassword;
 }
