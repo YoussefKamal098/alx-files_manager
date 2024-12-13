@@ -94,7 +94,7 @@ class UsersController {
    */
   static async checkIfUserExists(email) {
     const usersCollection = await dbClient.usersCollection();
-    return usersCollection.findOne({ email });
+    return await usersCollection.findOne({ email });
   }
 
   /**
