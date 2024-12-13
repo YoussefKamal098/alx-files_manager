@@ -20,7 +20,7 @@ class FilesController {
   static async postUpload(req, res) {
     const { userId } = req;
     let {
-      name, type, parentId= ROOT_FOLDER_ID, isPublic = false, data,
+      name, type, parentId = ROOT_FOLDER_ID, isPublic = false, data,
     } = req.body;
 
     parentId = parentId.toString();
@@ -48,7 +48,12 @@ class FilesController {
 
     if (type === FILE_TYPES.FOLDER) {
       const result = await filesCollection.insertOne(fileData);
-      return res.status(201).json({ id: result.insertedId, ...fileData, userId });
+      return res.status(201).json({
+        id: result.insertedId,
+        ...fileData,
+        userId,
+        parentId: parentId === ROOT_FOLDER_ID ? 0 : parentId,
+      });
     }
 
     // Handle file or image
@@ -58,7 +63,12 @@ class FilesController {
       fileData.localPath = await saveFile(data, uuid);
       const result = await filesCollection.insertOne(fileData);
 
-      return res.status(201).json({ id: result.insertedId, ...fileData, userId });
+      return res.status(201).json({
+        id: result.insertedId,
+        ...fileData,
+        userId,
+        parentId: parentId === ROOT_FOLDER_ID ? 0 : parentId,
+      });
     } catch (err) {
       return res.status(500).json({ error: 'Error saving the file' });
     }
