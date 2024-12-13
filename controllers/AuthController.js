@@ -19,13 +19,13 @@ class AuthController {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Basic ')) {
-      return res.status(400).json({ error: 'Bad request' });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Decode email and password from the Authorization header
     const { email, password } = decodeAuthHeader(authHeader);
     if (!email || !password) {
-      return res.status(400).json({ error: 'Bad request' });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Find user by email and compare password
