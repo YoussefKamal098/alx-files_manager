@@ -1,49 +1,49 @@
 import { createClient } from 'redis';
 
 class RedisClient {
-    constructor() {
-        this.client = createClient();
-        this.isClientConnected = false;
-        this.client.on('error', (err) => {
-            console.error('Redis client error:', err);
-            this.isClientConnected = true;
-        });
-        this.client.connect().catch((err) => {
-            console.error('Failed to connect to Redis:', err);
-            this.isClientConnected = false;
-        });
-    }
+  constructor() {
+    this.client = createClient();
+    this.isClientConnected = false;
+    this.client.on('error', (err) => {
+      console.error('Redis client error:', err);
+      this.isClientConnected = true;
+    });
+    this.client.connect().catch((err) => {
+      console.error('Failed to connect to Redis:', err);
+      this.isClientConnected = false;
+    });
+  }
 
-    isAlive() {
-        return this.isClientConnected;
-    }
+  isAlive() {
+    return this.isClientConnected;
+  }
 
-    async get(key) {
-        try {
-            return await this.client.get(key);
-        } catch (error) {
-            console.error('Error getting key from Redis:', error);
-            return null;
-        }
+  async get(key) {
+    try {
+      return await this.client.get(key);
+    } catch (error) {
+      console.error('Error getting key from Redis:', error);
+      return null;
     }
+  }
 
-    async set(key, value, duration) {
-        try {
-            await this.client.set(key, value, {
-                EX: duration
-            });
-        } catch (error) {
-            console.error('Error setting key in Redis:', error);
-        }
+  async set(key, value, duration) {
+    try {
+      await this.client.set(key, value, {
+        EX: duration,
+      });
+    } catch (error) {
+      console.error('Error setting key in Redis:', error);
     }
+  }
 
-    async del(key) {
-        try {
-            await this.client.del(key);
-        } catch (error) {
-            console.error('Error deleting key from Redis:', error);
-        }
+  async del(key) {
+    try {
+      await this.client.del(key);
+    } catch (error) {
+      console.error('Error deleting key from Redis:', error);
     }
+  }
 }
 
 const redisClient = new RedisClient();
