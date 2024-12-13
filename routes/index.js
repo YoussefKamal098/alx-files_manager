@@ -1,5 +1,6 @@
 import express from 'express';
-import AppController from '../controllers/AppController.js';  // Import AppController
+import AppController from '../controllers/AppController';
+import UsersController from '../controllers/UsersController';
 
 const router = express.Router();
 
@@ -8,5 +9,8 @@ router.get('/status', AppController.getStatus);
 
 // Define the /stats route to get the number of users and files
 router.get('/stats', AppController.getStats);
+
+// New endpoint to create a user
+router.post('/users', UsersController.postNew);
 
 export default router;

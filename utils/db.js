@@ -65,8 +65,7 @@ class DBClient {
   async nbUsers() {
     if (!this.db) return 0;
 
-    const usersCollection = this.db.collection('users');
-    return usersCollection.countDocuments();
+    return (await this.usersCollection()).countDocuments();
   }
 
   /**
@@ -78,8 +77,23 @@ class DBClient {
   async nbFiles() {
     if (!this.db) return 0;
 
-    const filesCollection = this.db.collection('files');
-    return filesCollection.countDocuments();
+    return (await this.filesCollection()).countDocuments();
+  }
+
+  /**
+   * Retrieves a reference to the `users` collection.
+   * @returns {Promise<Collection>}
+   */
+  async usersCollection() {
+    return this.client.db().collection('users');
+  }
+
+  /**
+   * Retrieves a reference to the `files` collection.
+   * @returns {Promise<Collection>}
+   */
+  async filesCollection() {
+    return this.client.db().collection('files');
   }
 }
 
