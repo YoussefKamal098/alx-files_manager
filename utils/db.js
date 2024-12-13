@@ -7,18 +7,21 @@ class DBClient {
     this.database = process.env.DB_DATABASE || 'files_manager';
     this.client = null;
     this.db = null;
+
+    this.connect().catch((err) => {
+      console.error(err);
+    });
   }
 
   // Initialize MongoDB connection
   async connect() {
     try {
-      const uri = `mongodb://${this.host}:${this.port}`;
-      this.client = new MongoClient(uri);
+      const uri = `mongodb://${this.host}:${this.port}/${this.database}`;
+      this.client = new MongoClient(uri, { useUnifiedTopology: true, useNewUrlParser: true });
       await this.client.connect();
       this.db = this.client.db(this.database);
     } catch (error) {
-      console.error('Error connecting to MongoDB:', error);
-      throw new Error('Failed to connect to MongoDB');
+      throw new Error(`Failed to connect to MongoDB: ${error}`);
     }
   }
 
@@ -27,16 +30,19 @@ class DBClient {
   }
 
   async nbUsers() {
+    if (!this.db) return 0;
+
     const usersCollection = this.db.collection('users');
-    return await usersCollection.countDocuments();
+    return usersCollection.countDocuments();
   }
 
   async nbFiles() {
+    if (!this.db) return 0;
+
     const filesCollection = this.db.collection('files');
-    return await filesCollection.countDocuments();
+    return filesCollection.countDocuments();
   }
 }
-
 
 const dbClient = new DBClient();
 export default dbClient;
