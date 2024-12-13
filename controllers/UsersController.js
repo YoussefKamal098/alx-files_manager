@@ -19,13 +19,13 @@ class UsersController {
     const { email, password } = req.body;
 
     try {
-      // Validate input
-      UsersController.validateInput(email, password);
+      if (!email) return res.status(400).json({ error: 'Missing email' });
+      if (!password) return res.status(400).json({ error: 'Missing password' });
 
       // Check if user already exists
       const existingUser = await UsersController.checkIfUserExists(email);
       if (existingUser) {
-        return UsersController.errorResponse(res, 400, 'Already exists');
+        return res.status(400).json({ error: 'Already exist' });
       }
 
       // Hash the password
@@ -39,7 +39,7 @@ class UsersController {
         email: newUser.email,
       });
     } catch (error) {
-      return UsersController.errorResponse(res, error.status || 400, error.message || 'Error creating user');
+      return res.status(500).json({ error: 'Internal server error' });
     }
   }
 
@@ -54,35 +54,18 @@ class UsersController {
     const { userId } = req;
 
     if (!userId) {
-      return UsersController.errorResponse(res, 401, 'Unauthorized');
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     try {
       const user = await UsersController.getUserById(userId);
       if (!user) {
-        return UsersController.errorResponse(res, 401, 'Unauthorized');
+        return res.status(401).json({ error: 'Unauthorized' });
       }
 
       return res.status(200).json({ id: user._id, email: user.email });
     } catch (error) {
-      return UsersController.errorResponse(res, 500, 'Internal Server Error');
-    }
-  }
-
-  /**
-   * Validates the provided email and password.
-   *
-   * @param {string} email - The user's email.
-   * @param {string} password - The user's password.
-   * @throws {Error} If validation fails.
-   */
-  static validateInput(email, password) {
-    if (!email) {
-      throw { status: 400, message: 'Missing email' };
-    }
-
-    if (!password) {
-      throw { status: 400, message: 'Missing password' };
+      return res.status(500).json({ error: 'Internal Server Error' });
     }
   }
 
@@ -94,7 +77,7 @@ class UsersController {
    */
   static async checkIfUserExists(email) {
     const usersCollection = await dbClient.usersCollection();
-    return await usersCollection.findOne({ email });
+    return usersCollection.findOne({ email });
   }
 
   /**
@@ -119,18 +102,6 @@ class UsersController {
   static async getUserById(userId) {
     const usersCollection = await dbClient.usersCollection();
     return usersCollection.findOne({ _id: new ObjectId(userId) });
-  }
-
-  /**
-   * Sends an error response.
-   *
-   * @param {express.Response} res - Express response object.
-   * @param {number} status - HTTP status code.
-   * @param {string} message - Error message.
-   * @returns {express.Response} - The error response.
-   */
-  static errorResponse(res, status, message) {
-    return res.status(status).json({ error: message });
   }
 }
 
