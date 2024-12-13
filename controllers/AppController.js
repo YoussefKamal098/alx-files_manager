@@ -1,4 +1,3 @@
-import express from 'express';
 import redisClient from '../utils/redis';
 import dbClient from '../utils/db';
 
@@ -10,10 +9,9 @@ class AppController {
   /**
    * This method checks the connection status of both Redis and the database
    * and returns a JSON response indicating their health.
-   *
-   * @param {express.Request} req - Express request object
-   * @param {express.Response} res - Express response object
-   * @returns {Promise<express.Response>} Express response object
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async getStatus(req, res) {
     try {
@@ -36,10 +34,9 @@ class AppController {
   /**
    * This method fetches the number of users and files stored in the database
    * and returns them in a JSON response.
-   *
-   * @param {express.Request} req - Express request object
-   * @param {express.Response} res - Express response object
-   * @returns {Promise<express.Response>} Express response object
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async getStats(req, res) {
     try {

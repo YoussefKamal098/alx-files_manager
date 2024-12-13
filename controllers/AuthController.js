@@ -1,9 +1,8 @@
-import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 import { verifyPasswordSha1 } from '../utils/hashUtils';
-import { decodeBasicAuthHeader } from '../utils/authUtils';
+import decodeBasicAuthHeader from '../utils/authUtils';
 
 /**
  * AuthController handles user authentication logic.
@@ -12,10 +11,9 @@ class AuthController {
   /**
    * Signs in a user by generating an authentication token.
    * Expects Authorization header with Basic Auth credentials (Base64 encoded).
-   *
-   * @param {express.Request} req - Express request object
-   * @param {express.Response} res - Express response object
-   * @returns {Promise<express.Response>} Express response object
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async getConnect(req, res) {
     try {
@@ -35,10 +33,9 @@ class AuthController {
 
   /**
    * Signs out the user by removing the token from Redis.
-   *
-   * @param {express.Request} req - Express request object
-   * @param {express.Response} res - Express response object
-   * @returns {Promise<express.Response>} Express response object
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async getDisconnect(req, res) {
     const token = req.headers['x-token'];
@@ -54,8 +51,6 @@ class AuthController {
 
   /**
    * Extracts and decodes the authorization header to retrieve email and password.
-   *
-   * @param {express.Request} req - Express request object
    * @returns {Promise<{email: string, password: string}>} - Returns decoded email and password
    */
   static async authenticate(req) {
@@ -109,9 +104,6 @@ class AuthController {
 
   /**
    * Sends an unauthorized response.
-   *
-   * @param {express.Response} res - Express response object
-   * @returns {express.Response} - The unauthorized response.
    */
   static unauthorizedResponse(res) {
     return res.status(401).json({ error: 'Unauthorized' });

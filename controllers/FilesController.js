@@ -1,4 +1,3 @@
-import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
@@ -22,10 +21,9 @@ import { saveFile } from '../utils/fileStorage';
 class FilesController {
   /**
    * Handles the creation of files and folders.
-   *
-   * @param {express.Request} req - Express request object
-   * @param {express.Response} res - Express response object
-   * @returns {Promise<express.Response>} Express response object
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async postUpload(req, res) {
     const { userId } = req;
@@ -93,8 +91,8 @@ class FilesController {
    * Creates a folder in the database.
    *
    * @param {FileData} fileData - File data for the folder.
-   * @param {express.Response} res - Express response object.
-   * @returns {Promise<express.Response>} Express response object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async createFolder(fileData, res) {
     const filesCollection = await dbClient.filesCollection();
@@ -113,22 +111,24 @@ class FilesController {
    *
    * @param {FileData} fileData - File data for the file/image.
    * @param {string} data - Base64 encoded file data.
-   * @param {express.Response} res - Express response object.
-   * @returns {Promise<express.Response>} Express response object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
    */
   static async createFile(fileData, data, res) {
     try {
+      const fileDataCopy = { ...fileData };
+
       const uuid = uuidv4();
-      fileData.localPath = await saveFile(data, uuid);
+      fileDataCopy.localPath = await saveFile(data, uuid);
 
       const filesCollection = await dbClient.filesCollection();
-      const result = await filesCollection.insertOne(fileData);
+      const result = await filesCollection.insertOne(fileDataCopy);
 
       return res.status(201).json({
         id: result.insertedId,
-        ...fileData,
-        userId: fileData.userId,
-        parentId: fileData.parentId === ROOT_FOLDER_ID ? 0 : fileData.parentId,
+        ...fileDataCopy,
+        userId: fileDataCopy.userId,
+        parentId: fileDataCopy.parentId === ROOT_FOLDER_ID ? 0 : fileData.parentId,
       });
     } catch (err) {
       return res.status(500).json({ error: 'Error saving the file' });
