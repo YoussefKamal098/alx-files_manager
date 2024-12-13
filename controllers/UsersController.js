@@ -8,48 +8,39 @@ import { hashPasswordSha1 } from '../utils/hashUtils';
  */
 class UsersController {
   /**
-     * Handles the creation of a new user.
-     * Expects an email and password in the request body.
-     * Responds with appropriate error messages or the created user object.
-     *
-     * @param {express.Request} req - The Express request object.
-     * @param {express.Response} res - The Express response object.
-     * @returns {Promise<express.Response>} Express response object
-     */
+   * Handles the creation of a new user.
+   * Expects an email and password in the request body.
+   *
+   * @param {express.Request} req - The Express request object.
+   * @param {express.Response} res - The Express response object.
+   * @returns {Promise<express.Response>} Express response object
+   */
   static async postNew(req, res) {
     const { email, password } = req.body;
 
-    // Check if email is provided
-    if (!email) {
-      return res.status(400).json({ error: 'Missing email' });
+    try {
+      // Validate input
+      UsersController.validateInput(email, password);
+
+      // Check if user already exists
+      const existingUser = await UsersController.checkIfUserExists(email);
+      if (existingUser) {
+        return UsersController.errorResponse(res, 400, 'Already exists');
+      }
+
+      // Hash the password
+      const hashedPassword = hashPasswordSha1(password);
+
+      // Create the new user and insert into DB
+      const newUser = await UsersController.createUser(email, hashedPassword);
+
+      return res.status(201).json({
+        id: newUser._id,
+        email: newUser.email,
+      });
+    } catch (error) {
+      return UsersController.errorResponse(res, error.status || 400, error.message || 'Error creating user');
     }
-
-    // Check if password is provided
-    if (!password) {
-      return res.status(400).json({ error: 'Missing password' });
-    }
-
-    // Check if the email already exists in the DB
-    const usersCollection = await dbClient.usersCollection();
-    const existingUser = await usersCollection.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Already exist' });
-    }
-
-    // Hash the password using the utility function
-    const hashedPassword = hashPasswordSha1(password);
-
-    // Create the new user object
-    const newUser = { email, password: hashedPassword };
-
-    // Insert the new user into the database
-    const result = await usersCollection.insertOne(newUser);
-
-    // Respond with the created user (without password)
-    return res.status(201).json({
-      id: result.insertedId,
-      email: newUser.email,
-    });
   }
 
   /**
@@ -63,19 +54,83 @@ class UsersController {
     const { userId } = req;
 
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return UsersController.errorResponse(res, 401, 'Unauthorized');
     }
 
-    // Find the user by userId
+    try {
+      const user = await UsersController.getUserById(userId);
+      if (!user) {
+        return UsersController.errorResponse(res, 401, 'Unauthorized');
+      }
+
+      return res.status(200).json({ id: user._id, email: user.email });
+    } catch (error) {
+      return UsersController.errorResponse(res, 500, 'Internal Server Error');
+    }
+  }
+
+  /**
+   * Validates the provided email and password.
+   *
+   * @param {string} email - The user's email.
+   * @param {string} password - The user's password.
+   * @throws {Error} If validation fails.
+   */
+  static validateInput(email, password) {
+    if (!email) {
+      throw { status: 400, message: 'Missing email' };
+    }
+
+    if (!password) {
+      throw { status: 400, message: 'Missing password' };
+    }
+  }
+
+  /**
+   * Checks if a user already exists in the database by email.
+   *
+   * @param {string} email - The user's email.
+   * @returns {Promise<Object|null>} - The user object if found, else null.
+   */
+  static async checkIfUserExists(email) {
     const usersCollection = await dbClient.usersCollection();
-    const user = await usersCollection.findOne({ _id: new ObjectId(userId) });
+    return usersCollection.findOne({ email });
+  }
 
-    if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+  /**
+   * Creates a new user in the database.
+   *
+   * @param {string} email - The user's email.
+   * @param {string} hashedPassword - The user's hashed password.
+   * @returns {Promise<Object>} - The created user object.
+   */
+  static async createUser(email, hashedPassword) {
+    const usersCollection = await dbClient.usersCollection();
+    const result = await usersCollection.insertOne({ email, password: hashedPassword });
+    return { _id: result.insertedId, email };
+  }
 
-    // Return user details (email and id only)
-    return res.status(200).json({ id: user._id, email: user.email });
+  /**
+   * Retrieves a user from the database by their user ID.
+   *
+   * @param {string} userId - The user's ID.
+   * @returns {Promise<Object|null>} - The user object if found, else null.
+   */
+  static async getUserById(userId) {
+    const usersCollection = await dbClient.usersCollection();
+    return usersCollection.findOne({ _id: new ObjectId(userId) });
+  }
+
+  /**
+   * Sends an error response.
+   *
+   * @param {express.Response} res - Express response object.
+   * @param {number} status - HTTP status code.
+   * @param {string} message - Error message.
+   * @returns {express.Response} - The error response.
+   */
+  static errorResponse(res, status, message) {
+    return res.status(status).json({ error: message });
   }
 }
 
