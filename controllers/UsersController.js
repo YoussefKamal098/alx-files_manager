@@ -48,6 +48,31 @@ class UsersController {
       email: newUser.email,
     });
   }
+
+  /**
+   * Retrieves the authenticated user's details based on the token.
+   *
+   * @param {Object} req - Express request object.
+   * @param {Object} res - Express response object.
+   */
+  static async getMe(req, res) {
+    const { userId } = req;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Find the user by userId
+    const usersCollection = dbClient.db.collection('users');
+    const user = await usersCollection.findOne({ _id: userId });
+
+    if (!user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // Return user details (email and id only)
+    return res.status(200).json({ id: user._id, email: user.email });
+  }
 }
 
 export default UsersController;
