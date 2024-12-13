@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 import { verifyPasswordSha1 } from '../utils/hashUtils';
-import { decodeAuthHeader } from "../utils/authUtils";
+import { decodeAuthHeader } from '../utils/authUtils';
 
 /**
  * AuthController handles user authentication logic.
@@ -40,7 +40,6 @@ class AuthController {
     if (!verifyPasswordSha1(password, existingUser.password)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
 
     // Generate a random token
     const token = uuidv4();
