@@ -1,5 +1,5 @@
 import express from 'express';
-import routes from './routes/index.js';  // Import routes from routes/index.js
+import routes from './routes/index'; // Import routes from routes/index.js
 
 const app = express();
 
@@ -14,5 +14,5 @@ app.use(routes);
 
 // Start the server
 app.listen(PORT, () => {
-    console.log(`Server running on port http://localhost:${PORT}/`);
+  console.log(`Server running on port http://localhost:${PORT}/`);
 });
