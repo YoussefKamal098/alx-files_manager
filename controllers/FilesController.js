@@ -4,6 +4,7 @@ import dbClient from '../utils/db';
 import { FILE_TYPES } from '../utils/fileTypes';
 import { ROOT_FOLDER_ID, validateFileRequest, validateParent } from '../utils/fileValidation';
 import { saveFile } from '../utils/fileStorage';
+import paginateCollection from '../utils/paginateCollection';
 
 /**
  * @typedef {Object} FileData
@@ -39,7 +40,6 @@ class FilesController {
       return res.status(400).json({ error: validation.error });
     }
 
-    /** @type FileData * */
     const fileData = {
       userId: ObjectId(userId),
       name,
@@ -53,6 +53,72 @@ class FilesController {
     }
 
     return FilesController.createFile(fileData, data, res);
+  }
+
+  /**
+   * Retrieves a file document by its ID for the authenticated user.
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
+   */
+  static async getShow(req, res) {
+    const { userId } = req;
+    const fileId = req.params.id;
+
+    try {
+      const filesCollection = await dbClient.filesCollection();
+      const file = await filesCollection.findOne({ _id: new ObjectId(fileId), userId });
+
+      if (!file) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      return res.status(200).json({
+        id: file._id,
+        userId: file.userId,
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+      });
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Retrieves all file documents for the authenticated user with pagination.
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
+   */
+  static async getIndex(req, res) {
+    const { userId } = req;
+
+    const parentId = req.query.parentId || '0'; // Default to root folder
+    const page = parseInt(req.query.page, 10) || 0; // Default to the first page
+    const pageSize = 20; // Limit each page to 20 items
+
+    try {
+      const filesCollection = await dbClient.filesCollection();
+      const files = await paginateCollection(
+        filesCollection,
+        { userId, parentId },
+        page,
+        pageSize,
+      );
+
+      return res.status(200).json(files.map((file) => ({
+        id: file._id,
+        userId: file.userId,
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+      })));
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   }
 
   /**
@@ -101,7 +167,6 @@ class FilesController {
     return res.status(201).json({
       id: result.insertedId,
       ...fileData,
-      userId: fileData.userId,
       parentId: fileData.parentId === ROOT_FOLDER_ID ? 0 : fileData.parentId,
     });
   }
@@ -127,7 +192,6 @@ class FilesController {
       return res.status(201).json({
         id: result.insertedId,
         ...fileDataCopy,
-        userId: fileDataCopy.userId,
         parentId: fileDataCopy.parentId === ROOT_FOLDER_ID ? 0 : fileData.parentId,
       });
     } catch (err) {

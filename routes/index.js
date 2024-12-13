@@ -17,11 +17,15 @@ router.get('/connect', AuthController.getConnect);
 // GET /disconnect - AuthController.getDisconnect
 router.get('/disconnect', authenticate, AuthController.getDisconnect);
 
-// Endpoint to create a user
+// Endpoints for users
 router.post('/users', UsersController.postNew);
 // GET /users/me - UsersController.getMe
 router.get('/users/me', authenticate, UsersController.getMe);
 
 router.post('/files', authenticate, FilesController.postUpload);
+
+// Endpoints for files
+router.get('/files/:id', authenticate, FilesController.getShow);
+router.get('/files', authenticate, FilesController.getIndex);
 
 export default router;
