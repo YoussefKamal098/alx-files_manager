@@ -42,9 +42,10 @@ class AuthController {
     }
 
     // Hash the provided password and compare it with the stored password
-    if (verifyPassword(password, existingUser.password)) {
+    if (!verifyPassword(password, existingUser.password)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
+
 
     // Generate a random token
     const token = uuidv4();
