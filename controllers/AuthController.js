@@ -10,70 +10,111 @@ import { decodeBasicAuthHeader } from '../utils/authUtils';
  */
 class AuthController {
   /**
-     * Signs in a user by generating an authentication token.
-     * Expects Authorization header with Basic Auth credentials (Base64 encoded).
-     *
-     * @param {express.Request} req - Express request object
-     * @param {express.Response} res - Express response object
-     * @returns {Promise<express.Response>} Express response object
-     */
+   * Signs in a user by generating an authentication token.
+   * Expects Authorization header with Basic Auth credentials (Base64 encoded).
+   *
+   * @param {express.Request} req - Express request object
+   * @param {express.Response} res - Express response object
+   * @returns {Promise<express.Response>} Express response object
+   */
   static async getConnect(req, res) {
-    const authHeader = req.headers.authorization;
-    let password;
-    let email;
-
     try {
-      // Decode email and password from the Authorization header
-      const { decodedEmail, decodedPassword } = decodeBasicAuthHeader(authHeader);
+      const { email, password } = await AuthController.authenticate(req);
 
-      if (!decodedEmail || !decodedPassword) {
-        return res.status(401).json({ error: 'Unauthorized' });
+      const user = await AuthController.findUserByEmail(email);
+      if (!user || !AuthController.isPasswordValid(password, user.password)) {
+        return AuthController.unauthorizedResponse(res);
       }
 
-      [email, password] = [decodedEmail, decodedPassword];
-    } catch (err) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      const token = await AuthController.generateToken(user._id);
+      return res.status(200).json({ token });
+    } catch (error) {
+      return AuthController.unauthorizedResponse(res);
     }
-
-    // Find user by email and compare password
-    const usersCollection = await dbClient.usersCollection();
-    const existingUser = await usersCollection.findOne({ email });
-
-    if (!existingUser) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // Hash the provided password and compare it with the stored password
-    if (!verifyPasswordSha1(password, existingUser.password)) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    // Generate a random token
-    const token = uuidv4();
-    // Store the token in Redis for 24 hours
-    await redisClient.set(`auth_${token}`, existingUser._id.toString(), 24 * 60 * 60); // 86400 seconds = 24 hours
-
-    return res.status(200).json({ token });
   }
 
   /**
-     * Signs out the user by removing the token from Redis.
-     *
-     * @param {express.Request} req - Express request object
-     * @param {express.Response} res - Express response object
-     * @returns {Promise<express.Response>} Express response object
-     */
+   * Signs out the user by removing the token from Redis.
+   *
+   * @param {express.Request} req - Express request object
+   * @param {express.Response} res - Express response object
+   * @returns {Promise<express.Response>} Express response object
+   */
   static async getDisconnect(req, res) {
     const token = req.headers['x-token'];
 
     if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return AuthController.unauthorizedResponse(res);
     }
 
     // Remove the token from Redis
     await redisClient.del(`auth_${token}`);
-
     return res.status(204).send(); // No content
+  }
+
+  /**
+   * Extracts and decodes the authorization header to retrieve email and password.
+   *
+   * @param {express.Request} req - Express request object
+   * @returns {Promise<{email: string, password: string}>} - Returns decoded email and password
+   */
+  static async authenticate(req) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      throw new Error('Unauthorized');
+    }
+
+    const { decodedEmail, decodedPassword } = decodeBasicAuthHeader(authHeader);
+
+    if (!decodedEmail || !decodedPassword) {
+      throw new Error('Unauthorized');
+    }
+
+    return { email: decodedEmail, password: decodedPassword };
+  }
+
+  /**
+   * Finds a user by email in the database.
+   *
+   * @param {string} email - The user's email.
+   * @returns {Promise<Object|null>} - The user object if found, else null.
+   */
+  static async findUserByEmail(email) {
+    const usersCollection = await dbClient.usersCollection();
+    return usersCollection.findOne({ email });
+  }
+
+  /**
+   * Validates if the provided password matches the stored password.
+   *
+   * @param {string} providedPassword - The password provided by the user.
+   * @param {string} storedPassword - The password stored in the database.
+   * @returns {boolean} - True if passwords match, false otherwise.
+   */
+  static isPasswordValid(providedPassword, storedPassword) {
+    return verifyPasswordSha1(providedPassword, storedPassword);
+  }
+
+  /**
+   * Generates a token and stores it in Redis for 24 hours.
+   *
+   * @param {string} userId - The user's ID.
+   * @returns {Promise<string>} - The generated token.
+   */
+  static async generateToken(userId) {
+    const token = uuidv4();
+    await redisClient.set(`auth_${token}`, userId.toString(), 24 * 60 * 60); // 86400 seconds = 24 hours
+    return token;
+  }
+
+  /**
+   * Sends an unauthorized response.
+   *
+   * @param {express.Response} res - Express response object
+   * @returns {express.Response} - The unauthorized response.
+   */
+  static unauthorizedResponse(res) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 }
 
