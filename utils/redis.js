@@ -20,28 +20,15 @@ class RedisClient {
   }
 
   async get(key) {
-    try {
-      return await promisify(this.client.GET).bind(this.client)(key);
-    } catch (error) {
-      console.error('Error getting key from Redis:', error);
-    }
+    return promisify(this.client.GET).bind(this.client)(key);
   }
 
   async set(key, value, duration) {
-    try {
-      await promisify(this.client.SETEX)
-          .bind(this.client)(key, duration, value);
-    } catch (error) {
-      console.error('Error setting key in Redis:', error);
-    }
+    return promisify(this.client.SETEX).bind(this.client)(key, duration, value);
   }
 
   async del(key) {
-    try {
-      await promisify(this.client.DEL).bind(this.client)(key);
-    } catch (error) {
-      console.error('Error deleting key from Redis:', error);
-    }
+    await promisify(this.client.DEL).bind(this.client)(key);
   }
 }
 
