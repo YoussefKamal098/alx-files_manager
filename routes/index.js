@@ -22,6 +22,6 @@ router.post('/users', UsersController.postNew);
 // GET /users/me - UsersController.getMe
 router.get('/users/me', authenticate, UsersController.getMe);
 
-router.post('/files', FilesController.postUpload);
+router.post('/files', authenticate, FilesController.postUpload);
 
 export default router;

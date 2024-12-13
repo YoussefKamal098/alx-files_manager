@@ -72,6 +72,16 @@ const validateBase64 = (data) => {
  * @returns {ValidationResult} The validation result.
  */
 const validateFileRequest = ({ name, type, data }) => {
+  if (name === undefined) {
+    return { valid: false, error: 'Missing name' };
+  }
+  if (type === undefined) {
+    return { valid: false, error: 'Missing type' };
+  }
+  if (type !== FILE_TYPES.FOLDER && data === undefined) {
+    return { valid: false, error: 'Missing data' };
+  }
+
   const result = {
     valid: false,
     error: null,

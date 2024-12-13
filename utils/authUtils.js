@@ -12,7 +12,7 @@
  * @returns {DecodedCredentials} An object containing the email and password.
  * @throws {Error} If the authorization header is invalid or missing.
  */
-export function decodeAuthHeader(authHeader) {
+function decodeAuthHeader(authHeader) {
   if (!authHeader || !authHeader.startsWith('Basic ')) {
     throw new Error('Invalid Authorization header');
   }
@@ -30,3 +30,5 @@ export function decodeAuthHeader(authHeader) {
 
   return { email, password };
 }
+
+export { decodeAuthHeader };
