@@ -67,7 +67,9 @@ class FilesController {
 
     try {
       const filesCollection = await dbClient.filesCollection();
-      const file = await filesCollection.findOne({ _id: new ObjectId(fileId), userId });
+      const file = await filesCollection.findOne({
+        _id: new ObjectId(fileId), userId: new ObjectId(userId),
+      });
 
       if (!file) {
         return res.status(404).json({ error: 'Not found' });
@@ -103,7 +105,10 @@ class FilesController {
       const filesCollection = await dbClient.filesCollection();
       const files = await paginateCollection(
         filesCollection,
-        { userId, parentId },
+        {
+          userId: new ObjectId(userId),
+          parentId: parentId === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : new ObjectId(parentId),
+        },
         page,
         pageSize,
       );
@@ -150,7 +155,7 @@ class FilesController {
    * @returns {string} Formatted parent ID.
    */
   static formatParentId(parentId) {
-    return parentId === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : ObjectId(parentId);
+    return parentId === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : new ObjectId(parentId);
   }
 
   /**
@@ -167,6 +172,7 @@ class FilesController {
     return res.status(201).json({
       id: result.insertedId,
       ...fileData,
+      _id: undefined,
       parentId: fileData.parentId === ROOT_FOLDER_ID ? 0 : fileData.parentId,
     });
   }
@@ -192,6 +198,7 @@ class FilesController {
       return res.status(201).json({
         id: result.insertedId,
         ...fileDataCopy,
+        _id: undefined,
         parentId: fileDataCopy.parentId === ROOT_FOLDER_ID ? 0 : fileData.parentId,
       });
     } catch (err) {
