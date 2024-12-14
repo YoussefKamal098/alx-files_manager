@@ -8,6 +8,7 @@ import { FILE_TYPES } from '../utils/fileTypes';
 import { ROOT_FOLDER_ID, validateFileRequest } from '../utils/fileValidation';
 import { saveFile, streamFile } from '../utils/fileStorage';
 import paginateCollection from '../utils/paginateCollection';
+import redisClient from '../utils/redis';
 
 /**
  * @typedef {Object} FileData
@@ -220,8 +221,8 @@ class FilesController {
    * @returns {Promise<object>} Express response object.
    */
   static async getFile(req, res) {
-    const { userId } = req;
     const fileId = req.params.id;
+    const userId = await redisClient.get(`auth_${req.headers['x-token']}`);
 
     try {
       ObjectId(fileId);
