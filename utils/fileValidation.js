@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import mime from 'mime-types';
+// import mime from 'mime-types';
 import { FILE_TYPES, isValidFileType } from './fileTypes';
 import dbClient from './db';
 
@@ -9,6 +9,22 @@ const MAX_NAME_LENGTH = 255; // Maximum length for file/folder names
 const INVALID_CHARACTERS = /[<>:"/\\|?*]/; // Invalid characters for filenames
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB in bytes
 const BASE64_REGEX = /^(?:[A-Z0-9+/]{4})*(?:[A-Z0-9+/]{2}==|[A-Z0-9+/]{3}=)?$/i;
+
+/**
+ * Converts bytes to a human-readable file size (KB, MB, GB, etc.)
+ *
+ * @param {number} bytes - The size in bytes.
+ * @returns {string} - The human-readable file size.
+ */
+const formatBytes = (bytes) => {
+  if (bytes === 0) return '0 Bytes';
+
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  // Determine the index of the size unit (KB, MB, etc.)
+  const i = Math.floor(Math.log(bytes) / Math.log(1024));
+
+  return `${(bytes / 1024 ** i).toFixed(2)} ${sizes[i]}`; // Format and return the size
+};
 
 /**
  * Validation result structure.
@@ -56,7 +72,7 @@ const validateBase64 = (data) => {
   }
 
   if (Buffer.byteLength(data, 'base64') > MAX_FILE_SIZE) {
-    return { valid: false, error: 'Data exceeds maximum file size of 2GB' };
+    return { valid: false, error: `Data exceeds maximum file size of ${formatBytes(MAX_FILE_SIZE)}` };
   }
 
   return { valid: true };
@@ -80,6 +96,12 @@ const validateParent = async (parentId) => {
     return { valid: true };
   }
 
+  try {
+    ObjectId(parentId);
+  } catch (error) {
+    return { ...result, error: 'Parent not found' };
+  }
+
   const filesCollection = await dbClient.filesCollection();
   const parentFile = await filesCollection.findOne({ _id: ObjectId(parentId) });
 
@@ -101,18 +123,25 @@ const validateParent = async (parentId) => {
  * @param {string} params.name - The name of the file or folder.
  * @param {string} params.type - The type of the file (folder, file, or image).
  * @param {string} [params.data] - The Base64-encoded content of the file (required for file/image).
- * @param {string} [params.parentId] - The ID of the parent folder (optional).
- *
+ * @param {string} [params.parentId=ROOT_FOLDER_ID] -
+ *  The ID of the parent folder (default to ROOT_FOLDER_ID).
+ * @param {boolean} [isPublic=false] - THe visibility of file (default to false).
  * @returns {Promise<ValidationResult>} The validation result.
  */
 const validateFileRequest = async ({
-  name, type, data, parentId,
+  name, type, data, parentId = ROOT_FOLDER_ID, isPublic = false,
 }) => {
   if (name === undefined) {
     return { valid: false, error: 'Missing name' };
   }
   if (type === undefined) {
     return { valid: false, error: 'Missing type' };
+  }
+  if (!isValidFileType(type)) {
+    return { valid: false, error: 'Invalid file type' };
+  }
+  if (typeof isPublic !== 'boolean') {
+    return { valid: false, error: 'isPublic attribute must be a boolean value' };
   }
   if (type !== FILE_TYPES.FOLDER && data === undefined) {
     return { valid: false, error: 'Missing data' };
@@ -136,10 +165,11 @@ const validateFileRequest = async ({
 
   // Additional validation for file extension using mime library
   if (type !== FILE_TYPES.FOLDER) {
-    const mimeType = mime.lookup(name);
-    if (!mimeType || !isValidFileType(type)) {
-      return { ...result, error: 'Invalid file type or extension' };
-    }
+    // check if the file extension id valid
+    // const mimeType = mime.lookup(name);
+    // if (!mimeType) {
+    //   return { ...result, error: 'Invalid file extension' };
+    // }
 
     const base64Validation = validateBase64(data);
     if (!base64Validation.valid) {

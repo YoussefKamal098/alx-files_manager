@@ -14,7 +14,7 @@ import paginateCollection from '../utils/paginateCollection';
  * @property {string} name - The name of the file or folder.
  * @property {string} type - The type of the file (either 'file' or 'folder').
  * @property {string} parentId - The ID of the parent folder (optional, defaults to ROOT_FOLDER_ID).
- * @property {string?} localPath - The local path of the file (optional).
+ * @property {string} [localPath] - The local path of the file (optional).
  * @property {string} userId - The ID of the user.
  * @property {boolean} [isPublic=false] - Indicates whether the file is public (defaults to false).
  */
@@ -36,7 +36,7 @@ class FilesController {
     } = req.body;
 
     const validation = await FilesController.validateRequest({
-      name, type, data, parentId, isPublic, userId,
+      name, type, data, parentId, isPublic,
     });
 
     if (!validation.valid) {
@@ -67,6 +67,12 @@ class FilesController {
   static async getShow(req, res) {
     const { userId } = req;
     const fileId = req.params.id;
+
+    try {
+      ObjectId(fileId);
+    } catch (error) {
+      return res.status(404).json({ error: 'Not found' });
+    }
 
     try {
       const filesCollection = await dbClient.filesCollection();
@@ -105,6 +111,12 @@ class FilesController {
     const pageSize = 20; // Limit each page to 20 items
 
     try {
+      ObjectId(parentId);
+    } catch (error) {
+      return res.status(404).json({ error: 'Parent not found' });
+    }
+
+    try {
       const filesCollection = await dbClient.filesCollection();
       const files = await paginateCollection(
         filesCollection,
@@ -140,6 +152,12 @@ class FilesController {
     const fileId = req.params.id;
 
     try {
+      ObjectId(fileId);
+    } catch (error) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    try {
       const updatedFile = await FilesController.updateFileVisibility(fileId, true, userId);
 
       return res.status(200).json({
@@ -169,6 +187,12 @@ class FilesController {
     const fileId = req.params.id;
 
     try {
+      ObjectId(fileId);
+    } catch (error) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+
+    try {
       const updatedFile = await FilesController.updateFileVisibility(fileId, false, userId);
 
       return res.status(200).json({
@@ -196,6 +220,12 @@ class FilesController {
   static async getFile(req, res) {
     const { userId } = req;
     const fileId = req.params.id;
+
+    try {
+      ObjectId(fileId);
+    } catch (error) {
+      return res.status(404).json({ error: 'Not found' });
+    }
 
     try {
       const filesCollection = await dbClient.filesCollection();
@@ -264,15 +294,17 @@ class FilesController {
    * @param {Object} params - The request parameters.
    * @param {string} params.name - The name of the file/folder.
    * @param {string} params.type - The type of the file (e.g., 'file', 'folder').
-   * @param {string} params.data - The base64 file data (if a file).
-   * @param {string} params.parentId - The ID of the parent folder (optional).
+   * @param {string} [params.data] - The base64 file data (if a file).
+   * @param {string} [params.parentId=ROOT_FOLDER_ID] -
+   *  The ID of the parent folder (default to ROOT_FOLDER_ID).
+   * @param {boolean} [isPublic=false] - THe visibility of file (default to false).
    * @returns {Promise<ValidationResult>} Validation result.
    */
   static async validateRequest({
-    name, type, data, parentId,
+    name, type, data, parentId = ROOT_FOLDER_ID, isPublic = false,
   }) {
     const fileValidation = await validateFileRequest({
-      name, type, data, parentId,
+      name, type, data, parentId, isPublic,
     });
     if (!fileValidation.valid) return { valid: false, error: fileValidation.error };
 
