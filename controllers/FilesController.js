@@ -106,14 +106,16 @@ class FilesController {
   static async getIndex(req, res) {
     const { userId } = req;
 
-    const parentId = req.query.parentId || '0'; // Default to root folder
+    const parentId = req.query.parentId || ROOT_FOLDER_ID; // Default to root folder
     const page = parseInt(req.query.page, 10) || 0; // Default to the first page
     const pageSize = 20; // Limit each page to 20 items
 
     try {
       ObjectId(parentId);
     } catch (error) {
-      return res.status(404).json({ error: 'Parent not found' });
+      if (parentId !== ROOT_FOLDER_ID) {
+        return res.status(404).json({ error: 'Parent not found' });
+      }
     }
 
     try {
