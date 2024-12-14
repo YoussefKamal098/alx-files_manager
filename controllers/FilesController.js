@@ -1,3 +1,6 @@
+import fs, { promises as fsPromises } from 'fs';
+import mime from 'mime-types';
+
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
@@ -180,6 +183,51 @@ class FilesController {
       if (error.message === 'Not found') {
         return res.status(404).json({ error: 'Not found' });
       }
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Retrieves the content of the file.
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
+   */
+  static async getFile(req, res) {
+    const { userId } = req;
+    const fileId = req.params.id;
+
+    try {
+      const filesCollection = await dbClient.filesCollection();
+      const file = await filesCollection.findOne({ _id: new ObjectId(fileId) });
+
+      if (!file) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      // Check if the file is public or if the user is the owner
+      if (!file.isPublic && userId !== file.userId.toString()) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      // Check if the file is a folder
+      if (file.type === 'folder') {
+        return res.status(400).json({ error: "A folder doesn't have content" });
+      }
+
+      // Asynchronously check if the file exists locally
+      try {
+        await fsPromises.access(file.localPath); // Check if the file exists asynchronously
+      } catch (error) {
+        return res.status(404).json({ error: 'Not found' });
+      }
+
+      // Return the file content with the correct MIME type
+      res.setHeader('Content-Type', mime.contentType(file.localPath) || 'text/plain; charset=utf-8');
+      const fileStream = fs.createReadStream(file.localPath);
+
+      return fileStream.pipe(res); // Stream the file content to the response
+    } catch (error) {
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
