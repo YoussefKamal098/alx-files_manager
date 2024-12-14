@@ -127,6 +127,90 @@ class FilesController {
   }
 
   /**
+   * Publishes a file by setting `isPublic` to `true`.
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
+   */
+  static async putPublish(req, res) {
+    const { userId } = req;
+    const fileId = req.params.id;
+
+    try {
+      const updatedFile = await FilesController.updateFileVisibility(fileId, true, userId);
+
+      return res.status(200).json({
+        id: updatedFile._id,
+        userId: updatedFile.userId,
+        name: updatedFile.name,
+        type: updatedFile.type,
+        isPublic: updatedFile.isPublic,
+        parentId: updatedFile.parentId,
+      });
+    } catch (error) {
+      if (error.message === 'Not found') {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Unpublishes a file by setting `isPublic` to `false`.
+   * @param {object} req - Express request object.
+   * @param {object} res - Express response object.
+   * @returns {Promise<object>} Express response object.
+   */
+  static async putUnpublish(req, res) {
+    const { userId } = req;
+    const fileId = req.params.id;
+
+    try {
+      const updatedFile = await FilesController.updateFileVisibility(fileId, false, userId);
+
+      return res.status(200).json({
+        id: updatedFile._id,
+        userId: updatedFile.userId,
+        name: updatedFile.name,
+        type: updatedFile.type,
+        isPublic: updatedFile.isPublic,
+        parentId: updatedFile.parentId,
+      });
+    } catch (error) {
+      if (error.message === 'Not found') {
+        return res.status(404).json({ error: 'Not found' });
+      }
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+
+  /**
+   * Helper function to update file visibility.
+   * @param {ObjectId} fileId - The ID of the file to update.
+   * @param {boolean} isPublic - The visibility status to set.
+   * @param {ObjectId} userId - The ID of the user.
+   * @returns {Promise<object>} The updated file.
+   */
+  static async updateFileVisibility(fileId, isPublic, userId) {
+    const filesCollection = await dbClient.filesCollection();
+    const file = await filesCollection.findOne(
+      { _id: new ObjectId(fileId), userId: new ObjectId(userId) },
+    );
+
+    if (!file) {
+      throw new Error('Not found');
+    }
+
+    await filesCollection.updateOne(
+      { _id: new ObjectId(fileId) },
+      { $set: { isPublic } },
+    );
+
+    // Fetch the updated file from the database
+    return filesCollection.findOne({ _id: new ObjectId(fileId) });
+  }
+
+  /**
    * Validates the file request.
    *
    * @param {Object} params - The request parameters.
