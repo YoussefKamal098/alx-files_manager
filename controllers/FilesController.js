@@ -1,12 +1,12 @@
-import fs, { promises as fsPromises } from 'fs';
+import { promises as fsPromises } from 'fs';
 import mime from 'mime-types';
 
 import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { FILE_TYPES } from '../utils/fileTypes';
-import { ROOT_FOLDER_ID, validateFileRequest, validateParent } from '../utils/fileValidation';
-import { saveFile } from '../utils/fileStorage';
+import { ROOT_FOLDER_ID, validateFileRequest } from '../utils/fileValidation';
+import { saveFile, streamFile } from '../utils/fileStorage';
 import paginateCollection from '../utils/paginateCollection';
 
 /**
@@ -223,10 +223,10 @@ class FilesController {
       }
 
       // Return the file content with the correct MIME type
-      res.setHeader('Content-Type', mime.contentType(file.localPath) || 'text/plain; charset=utf-8');
-      const fileStream = fs.createReadStream(file.localPath);
+      res.setHeader('Content-Type', mime.contentType(file.name) || 'text/plain; charset=utf-8');
+      const stream = await streamFile(file.localPath);
 
-      return fileStream.pipe(res); // Stream the file content to the response
+      return stream.pipe(res); // Stream the file content to the response
     } catch (error) {
       return res.status(500).json({ error: 'Internal server error' });
     }
@@ -271,11 +271,10 @@ class FilesController {
   static async validateRequest({
     name, type, data, parentId,
   }) {
-    const fileValidation = validateFileRequest({ name, type, data });
+    const fileValidation = await validateFileRequest({
+      name, type, data, parentId,
+    });
     if (!fileValidation.valid) return { valid: false, error: fileValidation.error };
-
-    const parentValidation = await validateParent(parentId);
-    if (!parentValidation.valid) return { valid: false, error: parentValidation.error };
 
     return { valid: true };
   }

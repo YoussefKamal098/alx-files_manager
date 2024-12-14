@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs, { promises as fsPromises } from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
@@ -32,4 +32,24 @@ const saveFile = async (data, filename) => {
   return filePath;
 };
 
-export { FOLDER_PATH, saveFile };
+/**
+ * Retrieves a file as a stream from the storage folder if it exists.
+ *
+ * @param {string} filepath - The path of the file to retrieve.
+ *
+ * @returns {Promise<fs.ReadStream|null>} The file stream if valid,
+ * or null if the file does not exist.
+ */
+const streamFile = async (filepath) => {
+  try {
+    // Check if the file exists asynchronously
+    await fsPromises.access(filepath);
+
+    // Return a readable stream of the file content
+    return fs.createReadStream(filepath);
+  } catch (error) {
+    return null; // File not found or other error
+  }
+};
+
+export { saveFile, streamFile };

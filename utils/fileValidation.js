@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb';
+import mime from 'mime-types';
 import { FILE_TYPES, isValidFileType } from './fileTypes';
 import dbClient from './db';
 
@@ -62,53 +63,6 @@ const validateBase64 = (data) => {
 };
 
 /**
- * Validates the request data for creating a file or folder.
- *
- * @param {Object} params - The parameters to validate.
- * @param {string} params.name - The name of the file or folder.
- * @param {string} params.type - The type of the file (folder, file, or image).
- * @param {string} [params.data] - The Base64-encoded content of the file (required for file/image).
- *
- * @returns {ValidationResult} The validation result.
- */
-const validateFileRequest = ({ name, type, data }) => {
-  if (name === undefined) {
-    return { valid: false, error: 'Missing name' };
-  }
-  if (type === undefined) {
-    return { valid: false, error: 'Missing type' };
-  }
-  if (type !== FILE_TYPES.FOLDER && data === undefined) {
-    return { valid: false, error: 'Missing data' };
-  }
-
-  const result = {
-    valid: false,
-    error: null,
-  };
-
-  // Validate the name of the file/folder
-  const nameValidation = validateName(name);
-  if (!nameValidation.valid) {
-    return { ...result, error: nameValidation.error };
-  }
-
-  if (!isValidFileType(type)) {
-    return { ...result, error: 'Invalid file type' };
-  }
-
-  // Validate the Base64 data if the type is not a folder
-  if (type !== FILE_TYPES.FOLDER) {
-    const base64Validation = validateBase64(data);
-    if (!base64Validation.valid) {
-      return { ...result, error: base64Validation.error };
-    }
-  }
-
-  return { valid: true };
-};
-
-/**
  * Validates the parent folder specified by the parentId.
  *
  * @param {string} parentId - The ID of the parent folder.
@@ -140,4 +94,66 @@ const validateParent = async (parentId) => {
   return { valid: true };
 };
 
-export { ROOT_FOLDER_ID, validateFileRequest, validateParent };
+/**
+ * Validates the request data for creating a file or folder.
+ *
+ * @param {Object} params - The parameters to validate.
+ * @param {string} params.name - The name of the file or folder.
+ * @param {string} params.type - The type of the file (folder, file, or image).
+ * @param {string} [params.data] - The Base64-encoded content of the file (required for file/image).
+ * @param {string} [params.parentId] - The ID of the parent folder (optional).
+ *
+ * @returns {Promise<ValidationResult>} The validation result.
+ */
+const validateFileRequest = async ({
+  name, type, data, parentId,
+}) => {
+  if (name === undefined) {
+    return { valid: false, error: 'Missing name' };
+  }
+  if (type === undefined) {
+    return { valid: false, error: 'Missing type' };
+  }
+  if (type !== FILE_TYPES.FOLDER && data === undefined) {
+    return { valid: false, error: 'Missing data' };
+  }
+
+  const result = {
+    valid: false,
+    error: null,
+  };
+
+  // Validate the name of the file/folder
+  const nameValidation = validateName(name);
+  if (!nameValidation.valid) {
+    return { ...result, error: nameValidation.error };
+  }
+
+  // Additional validation for folder name (should not contain a dot)
+  if (type === FILE_TYPES.FOLDER && name.includes('.')) {
+    return { ...result, error: 'Folder name should not contain a dot' };
+  }
+
+  // Additional validation for file extension using mime library
+  if (type !== FILE_TYPES.FOLDER) {
+    const mimeType = mime.lookup(name);
+    if (!mimeType || !isValidFileType(type)) {
+      return { ...result, error: 'Invalid file type or extension' };
+    }
+
+    const base64Validation = validateBase64(data);
+    if (!base64Validation.valid) {
+      return { ...result, error: base64Validation.error };
+    }
+  }
+
+  // Validate the parent folder
+  const parentValidation = await validateParent(parentId);
+  if (!parentValidation.valid) {
+    return { ...result, error: parentValidation.error };
+  }
+
+  return { valid: true };
+};
+
+export { ROOT_FOLDER_ID, validateFileRequest };
