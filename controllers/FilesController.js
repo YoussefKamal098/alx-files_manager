@@ -7,8 +7,6 @@ import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 
 import { saveFile, streamFile } from '../utils/fileStorage';
-import paginateCollection from '../helpers/paginateCollection';
-
 import { FILE_TYPES, ROOT_FOLDER_ID } from '../config';
 
 /**
@@ -93,27 +91,25 @@ class FilesController {
   static async getIndex(req, res) {
     const { userId } = req;
 
-    const parentId = req.query.parentId || ROOT_FOLDER_ID; // Default to root folder
+    let parentId = req.query.parentId || ROOT_FOLDER_ID; // Default to root folder
     const page = parseInt(req.query.page, 10) || 0; // Default to the first page
     const pageSize = 20; // Limit each page to 20 items
 
     try {
-      ObjectId(parentId);
+      parentId = parentId === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : new ObjectId(parentId);
     } catch (error) {
       if (parentId !== ROOT_FOLDER_ID) return res.status(404).json({ error: 'Invalid parent id' });
     }
 
     try {
       const filesCollection = await dbClient.filesCollection();
-      const files = await paginateCollection(
-        filesCollection,
-        {
-          userId: new ObjectId(userId),
-          parentId: parentId === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : new ObjectId(parentId),
-        },
-        page,
-        pageSize,
-      );
+      const skip = page * pageSize;
+
+      const files = await filesCollection.aggregate([
+        { $match: { userId: new ObjectId(userId), parentId } },
+        { $skip: skip },
+        { $limit: pageSize },
+      ]).toArray();
 
       return res.status(200).json(files.map((file) => ({
         id: file._id,
