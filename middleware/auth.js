@@ -5,16 +5,12 @@ import redisClient from '../utils/redis';
  */
 const authenticate = async (req, res, next) => {
   const token = req.headers['x-token'];
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     // Check if the token exists in Redis
     const userId = await redisClient.get(`auth_${token}`);
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     // Attach userId to request for further use in controllers
     req.userId = userId;

@@ -1,6 +1,7 @@
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { hashPasswordSha1 } from '../utils/hashUtils';
+import validateUserRequestBody from '../utils/validateUserRequestBody';
 
 /**
  * UsersController handles the creation of users and related logic.
@@ -14,19 +15,15 @@ class UsersController {
    * @returns {Promise<object>} Express response object.
    */
   static async postNew(req, res) {
-    const { email, password } = req.body;
-
     try {
-      if (!email) return res.status(400).json({ error: 'Missing email' });
-      if (!password) return res.status(400).json({ error: 'Missing password' });
-      if (typeof email !== 'string') return res.status(400).json({ error: 'Invalid email' });
-      if (typeof password !== 'string') return res.status(400).json({ error: 'Invalid password' });
+      const validation = await validateUserRequestBody(req.body);
+      if (!validation.valid) return res.status(400).json({ error: validation.err });
+
+      const { email, password } = req.body;
 
       // Check if user already exists
       const existingUser = await UsersController.checkIfUserExists(email);
-      if (existingUser) {
-        return res.status(400).json({ error: 'Already exist' });
-      }
+      if (existingUser) return res.status(400).json({ error: 'Already exist' });
 
       // Hash the password
       const hashedPassword = hashPasswordSha1(password);
@@ -34,10 +31,7 @@ class UsersController {
       // Create the new user and insert into DB
       const newUser = await UsersController.createUser(email, hashedPassword);
 
-      return res.status(201).json({
-        id: newUser._id,
-        email: newUser.email,
-      });
+      return res.status(201).json({ id: newUser._id, email: newUser.email });
     } catch (error) {
       return res.status(500).json({ error: 'Internal server error' });
     }
@@ -51,16 +45,11 @@ class UsersController {
    */
   static async getMe(req, res) {
     const { userId } = req;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
     try {
       const user = await UsersController.getUserById(userId);
-      if (!user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
       return res.status(200).json({ id: user._id, email: user.email });
     } catch (error) {

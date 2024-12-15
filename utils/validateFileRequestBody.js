@@ -1,6 +1,9 @@
 import { ObjectId } from 'mongodb';
-import { FILE_TYPES, isValidFileType } from './fileTypes';
+
 import dbClient from './db';
+import { FILE_TYPES, isValidFileType } from './fileTypes';
+import formatBytes from './formatUtils';
+import validateUnexpectedAttributes from './validation';
 
 /**
  * Validation result structure.
@@ -17,29 +20,13 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB in bytes
 const BASE64_REGEX = /^(?:[A-Z0-9+/]{4})*(?:[A-Z0-9+/]{2}==|[A-Z0-9+/]{3}=)?$/i;
 
 /**
- * Converts bytes to a human-readable file size (KB, MB, GB, etc.)
- *
- * @param {number} bytes - The size in bytes.
- * @returns {string} - The human-readable file size.
- */
-const formatBytes = (bytes) => {
-  if (bytes === 0) return '0 Bytes';
-
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-  // Determine the index of the size unit (KB, MB, etc.)
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-
-  return `${(bytes / 1024 ** i).toFixed(2)} ${sizes[i]}`; // Format and return the size
-};
-
-/**
  * Validates if a name is a valid file or directory name.
  * Ensures the name does not contain invalid characters and is within length limits.
  *
  * @param {string} name - The name of the file or folder.
  * @returns {ValidationResult} The validation result.
  */
-const validateName = (name) => {
+const validateFileName = (name) => {
   if (!name) {
     return { valid: false, err: 'Name cannot be empty' };
   }
@@ -84,7 +71,7 @@ const validateBase64 = (data) => {
  *
  * @returns {Promise<ValidationResult>} The validation result.
  */
-const validateParent = async (parentId) => {
+const validateParentId = async (parentId) => {
   // Check if the parentId is defined the root folder ID
   if (!parentId) return { valid: false, err: 'Invalid parent id' };
   if (parentId.toString() === ROOT_FOLDER_ID) return { valid: true };
@@ -112,7 +99,7 @@ const validateParent = async (parentId) => {
 /**
  * Validates the request data for creating a file or folder.
  *
- * @param {Object} body - The request body to validate.
+ * @param {Record<string, any>} body - The request body to validate.
  * @param {string} body.name - The name of the file or folder.
  * @param {string} body.type - The type of the file (folder, file, or image).
  * @param {string} [body.data] - The Base64-encoded content of the file (required for file/image).
@@ -122,6 +109,10 @@ const validateParent = async (parentId) => {
  * @returns {Promise<ValidationResult>} The validation result.
  */
 const validateFileRequestBody = async (body) => {
+  const allowedAttributes = ['name', 'type', 'data', 'parentId', 'isPublic'];
+  const unexpectedAttributesValidation = validateUnexpectedAttributes(body, allowedAttributes);
+  if (!unexpectedAttributesValidation.valid) return unexpectedAttributesValidation;
+
   const {
     name,
     type,
@@ -133,12 +124,14 @@ const validateFileRequestBody = async (body) => {
   // Validate required fields
   if (!name) return { valid: false, err: 'Missing name' };
   if (!type) return { valid: false, err: 'Missing type' };
+  if (typeof name !== 'string') return { valid: false, err: 'name attr must be a string value' };
+  if (typeof type !== 'string') return { valid: false, err: 'type attr must be a string value' };
   if (!isValidFileType(type)) return { valid: false, err: 'Invalid file type' };
-  if (typeof isPublic !== 'boolean') return { valid: false, err: 'isPublic attribute must be a boolean value' };
+  if (typeof isPublic !== 'boolean') return { valid: false, err: 'isPublic attr must be a boolean value' };
   if (type !== FILE_TYPES.FOLDER && !data) return { valid: false, err: 'Missing data for file or image' };
 
   // Validate the name
-  const nameValidation = validateName(name);
+  const nameValidation = validateFileName(name);
   if (!nameValidation.valid) return { valid: false, err: nameValidation.err };
 
   // Additional folder-specific validation
@@ -153,7 +146,7 @@ const validateFileRequestBody = async (body) => {
   }
 
   // Validate the parent folder
-  const parentValidation = await validateParent(parentId);
+  const parentValidation = await validateParentId(parentId);
   if (!parentValidation.valid) return { valid: false, err: parentValidation.err };
 
   // If all validations pass

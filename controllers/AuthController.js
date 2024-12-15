@@ -21,9 +21,7 @@ class AuthController {
       const { email, password } = await AuthController.authenticate(req);
 
       const user = await AuthController.findUserByEmail(email);
-      if (!user || !verifyPasswordSha1(password, user.password)) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
+      if (!user || !verifyPasswordSha1(password, user.password)) return res.status(401).json({ error: 'Unauthorized' });
 
       const token = await AuthController.generateToken(user._id);
       return res.status(200).json({ token });
@@ -40,10 +38,7 @@ class AuthController {
    */
   static async getDisconnect(req, res) {
     const token = req.headers['x-token'];
-
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
+    if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
     // Remove the token from Redis
     await redisClient.del(`auth_${token}`);
@@ -56,15 +51,10 @@ class AuthController {
    */
   static async authenticate(req) {
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      throw new Error('Unauthorized');
-    }
+    if (!authHeader) throw new Error('Unauthorized');
 
     const { decodedEmail, decodedPassword } = decodeBasicAuthHeader(authHeader);
-
-    if (!decodedEmail || !decodedPassword) {
-      throw new Error('Unauthorized');
-    }
+    if (!decodedEmail || !decodedPassword) throw new Error('Unauthorized');
 
     return { email: decodedEmail, password: decodedPassword };
   }

@@ -21,10 +21,7 @@ class AppController {
       const dbStatus = dbClient.isAlive();
 
       // Return the status as a JSON response
-      return res.status(200).json({
-        redis: redisStatus,
-        db: dbStatus,
-      });
+      return res.status(200).json({ redis: redisStatus, db: dbStatus });
     } catch (error) {
       console.error('Error checking status:', error);
       return res.status(500).json({ message: 'Error checking status' });

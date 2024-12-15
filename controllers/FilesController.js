@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { FILE_TYPES } from '../utils/fileTypes';
-import { ROOT_FOLDER_ID, validateFileRequestBody } from '../utils/fileValidation';
+import { ROOT_FOLDER_ID, validateFileRequestBody } from '../utils/validateFileRequestBody';
 import { saveFile, streamFile } from '../utils/fileStorage';
 import paginateCollection from '../utils/paginateCollection';
 import redisClient from '../utils/redis';
@@ -34,9 +34,7 @@ class FilesController {
     const { userId, body } = req;
 
     const validation = await validateFileRequestBody(body);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.err });
-    }
+    if (!validation.valid) return res.status(400).json({ error: validation.err });
 
     const fileData = {
       userId: ObjectId(userId),
@@ -46,9 +44,7 @@ class FilesController {
       parentId: FilesController.formatParentId(body.parentId),
     };
 
-    if (body.type === FILE_TYPES.FOLDER) {
-      return FilesController.createFolder(fileData, res);
-    }
+    if (body.type === FILE_TYPES.FOLDER) return FilesController.createFolder(fileData, res);
 
     return FilesController.createFile(fileData, body.data, res);
   }
@@ -75,9 +71,7 @@ class FilesController {
         _id: new ObjectId(fileId), userId: new ObjectId(userId),
       });
 
-      if (!file) {
-        return res.status(404).json({ error: 'Not found' });
-      }
+      if (!file) return res.status(404).json({ error: 'Not found' });
 
       return res.status(200).json({
         id: file._id,
@@ -108,9 +102,7 @@ class FilesController {
     try {
       ObjectId(parentId);
     } catch (error) {
-      if (parentId !== ROOT_FOLDER_ID) {
-        return res.status(404).json({ error: 'Invalid parent id' });
-      }
+      if (parentId !== ROOT_FOLDER_ID) return res.status(404).json({ error: 'Invalid parent id' });
     }
 
     try {
@@ -156,6 +148,7 @@ class FilesController {
 
     try {
       const updatedFile = await FilesController.updateFileVisibility(fileId, true, userId);
+      if (!updatedFile) return res.status(404).json({ error: 'Not found' });
 
       return res.status(200).json({
         id: updatedFile._id,
@@ -166,9 +159,6 @@ class FilesController {
         parentId: updatedFile.parentId,
       });
     } catch (error) {
-      if (error.message === 'Not found') {
-        return res.status(404).json({ error: 'Not found' });
-      }
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -191,6 +181,7 @@ class FilesController {
 
     try {
       const updatedFile = await FilesController.updateFileVisibility(fileId, false, userId);
+      if (!updatedFile) return res.status(404).json({ error: 'Not found' });
 
       return res.status(200).json({
         id: updatedFile._id,
@@ -201,9 +192,6 @@ class FilesController {
         parentId: updatedFile.parentId,
       });
     } catch (error) {
-      if (error.message === 'Not found') {
-        return res.status(404).json({ error: 'Not found' });
-      }
       return res.status(500).json({ error: 'Internal server error' });
     }
   }
@@ -228,19 +216,13 @@ class FilesController {
       const filesCollection = await dbClient.filesCollection();
       const file = await filesCollection.findOne({ _id: new ObjectId(fileId) });
 
-      if (!file) {
-        return res.status(404).json({ error: 'Not found' });
-      }
+      if (!file) return res.status(404).json({ error: 'Not found' });
 
       // Check if the file is public or if the user is the owner
-      if (!file.isPublic && userId !== file.userId.toString()) {
-        return res.status(404).json({ error: 'Not found' });
-      }
+      if (!file.isPublic && userId !== file.userId.toString()) return res.status(404).json({ error: 'Not found' });
 
       // Check if the file is a folder
-      if (file.type === 'folder') {
-        return res.status(400).json({ error: "A folder doesn't have content" });
-      }
+      if (file.type === 'folder') return res.status(400).json({ error: "A folder doesn't have content" });
 
       // Asynchronously check if the file exists locally
       try {
@@ -264,7 +246,7 @@ class FilesController {
    * @param {ObjectId} fileId - The ID of the file to update.
    * @param {boolean} isPublic - The visibility status to set.
    * @param {ObjectId} userId - The ID of the user.
-   * @returns {Promise<object>} The updated file.
+   * @returns {Promise<object | null>} The updated file or null if file not found.
    */
   static async updateFileVisibility(fileId, isPublic, userId) {
     const filesCollection = await dbClient.filesCollection();
@@ -272,9 +254,7 @@ class FilesController {
       { _id: new ObjectId(fileId), userId: new ObjectId(userId) },
     );
 
-    if (!file) {
-      throw new Error('Not found');
-    }
+    if (!file) return null;
 
     await filesCollection.updateOne(
       { _id: new ObjectId(fileId) },
