@@ -1,7 +1,6 @@
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { hashPasswordSha1 } from '../utils/hashUtils';
-import validateUserRequestBody from '../utils/validateUserRequestBody';
 
 /**
  * UsersController handles the creation of users and related logic.
@@ -16,9 +15,6 @@ class UsersController {
    */
   static async postNew(req, res) {
     try {
-      const validation = await validateUserRequestBody(req.body);
-      if (!validation.valid) return res.status(400).json({ error: validation.err });
-
       const { email, password } = req.body;
 
       // Check if user already exists

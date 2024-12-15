@@ -3,7 +3,9 @@ import AppController from '../controllers/AppController';
 import AuthController from '../controllers/AuthController';
 import UsersController from '../controllers/UsersController';
 import FilesController from '../controllers/FilesController';
-import authenticate from '../middleware/auth';
+import authenticateMiddleware from '../middlewares/authMiddleware';
+import validateFilePostUploadRequestBodyMiddleware from '../middlewares/validateFilePostUploadRequestBodyMiddleware';
+import validateUserPostNewRequestBodyMiddleware from '../middlewares/validateUserPostNewRequestBodyMiddleware';
 
 const router = express.Router();
 
@@ -15,21 +17,21 @@ router.get('/stats', AppController.getStats);
 // POST /connect - AuthController.getConnect
 router.get('/connect', AuthController.getConnect);
 // GET /disconnect - AuthController.getDisconnect
-router.get('/disconnect', authenticate, AuthController.getDisconnect);
+router.get('/disconnect', authenticateMiddleware, AuthController.getDisconnect);
 
 // Endpoints for users
-router.post('/users', UsersController.postNew);
+router.post('/users', validateUserPostNewRequestBodyMiddleware, UsersController.postNew);
 // GET /users/me - UsersController.getMe
-router.get('/users/me', authenticate, UsersController.getMe);
+router.get('/users/me', authenticateMiddleware, UsersController.getMe);
 
-router.post('/files', authenticate, FilesController.postUpload);
+router.post('/files', authenticateMiddleware, validateFilePostUploadRequestBodyMiddleware, FilesController.postUpload);
 
 // Endpoints for files
-router.get('/files/:id', authenticate, FilesController.getShow);
-router.get('/files', authenticate, FilesController.getIndex);
+router.get('/files/:id', authenticateMiddleware, FilesController.getShow);
+router.get('/files', authenticateMiddleware, FilesController.getIndex);
 
-router.put('/files/:id/publish', authenticate, FilesController.putPublish);
-router.put('/files/:id/unpublish', authenticate, FilesController.putUnpublish);
+router.put('/files/:id/publish', authenticateMiddleware, FilesController.putPublish);
+router.put('/files/:id/unpublish', authenticateMiddleware, FilesController.putUnpublish);
 
 router.get('/files/:id/data', FilesController.getFile);
 

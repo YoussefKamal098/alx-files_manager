@@ -1,9 +1,9 @@
 import { ObjectId } from 'mongodb';
 
-import dbClient from './db';
-import { FILE_TYPES, isValidFileType } from './fileTypes';
-import formatBytes from './formatUtils';
-import validateUnexpectedAttributes from './validation';
+import dbClient from '../utils/db';
+import { FILE_TYPES, isValidFileType } from '../utils/fileTypes';
+import formatBytes from '../utils/formatUtils';
+import validateUnexpectedAttributes from '../utils/validation';
 
 /**
  * Validation result structure.
@@ -14,8 +14,8 @@ import validateUnexpectedAttributes from './validation';
 
 // Constants
 const ROOT_FOLDER_ID = '0'; // Default root folder ID, can be set to UUID format if needed
-const MAX_NAME_LENGTH = 255; // Maximum length for file/folder names
-const INVALID_CHARACTERS = /[<>:"/\\|?*]/; // Invalid characters for filenames
+const MAX_NAME_FILE_LENGTH = 255; // Maximum length for file/folder names
+const INVALID_FILE_NAME_CHARACTERS = /[<>:"/\\|?*]/; // Invalid characters for filenames
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB in bytes
 const BASE64_REGEX = /^(?:[A-Z0-9+/]{4})*(?:[A-Z0-9+/]{2}==|[A-Z0-9+/]{3}=)?$/i;
 
@@ -31,12 +31,12 @@ const validateFileName = (name) => {
     return { valid: false, err: 'Name cannot be empty' };
   }
 
-  if (INVALID_CHARACTERS.test(name)) {
+  if (INVALID_FILE_NAME_CHARACTERS.test(name)) {
     return { valid: false, err: 'Name contains invalid characters' };
   }
 
-  if (name.length > MAX_NAME_LENGTH) {
-    return { valid: false, err: `Name exceeds maximum length of ${MAX_NAME_LENGTH} characters` };
+  if (name.length > MAX_NAME_FILE_LENGTH) {
+    return { valid: false, err: `Name exceeds maximum length of ${MAX_NAME_FILE_LENGTH} characters` };
   }
 
   return { valid: true };
@@ -108,7 +108,7 @@ const validateParentId = async (parentId) => {
  * @param {boolean} [body.isPublic=false] - The visibility of the file (default to false).
  * @returns {Promise<ValidationResult>} The validation result.
  */
-const validateFileRequestBody = async (body) => {
+const validateFilePostUploadRequestBody = async (body) => {
   const allowedAttributes = ['name', 'type', 'data', 'parentId', 'isPublic'];
   const unexpectedAttributesValidation = validateUnexpectedAttributes(body, allowedAttributes);
   if (!unexpectedAttributesValidation.valid) return unexpectedAttributesValidation;
@@ -153,4 +153,5 @@ const validateFileRequestBody = async (body) => {
   return { valid: true };
 };
 
-export { ROOT_FOLDER_ID, validateFileRequestBody };
+export { ROOT_FOLDER_ID };
+export default validateFilePostUploadRequestBody;

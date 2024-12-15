@@ -3,7 +3,7 @@ import redisClient from '../utils/redis';
 /**
  * Middleware to authenticate user based on token stored in Redis.
  */
-const authenticate = async (req, res, next) => {
+const authenticateMiddleware = async (req, res, next) => {
   const token = req.headers['x-token'];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -20,4 +20,4 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-export default authenticate;
+export default authenticateMiddleware;

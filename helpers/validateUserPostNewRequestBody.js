@@ -1,4 +1,4 @@
-import validateUnexpectedAttributes from './validation';
+import validateUnexpectedAttributes from '../utils/validation';
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PASSWORD_REGEX = /^(?=.*\d|.*[@$!%*?&]|.*[A-Z])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -11,7 +11,7 @@ const PASSWORD_REGEX = /^(?=.*\d|.*[@$!%*?&]|.*[A-Z])[A-Za-z\d@$!%*?&]{8,}$/;
  * @param {string} body.password - The password for the user.
  * @returns {Promise<ValidationResult>} The validation result.
  */
-const validateUserRequestBody = async (body) => {
+const validateUserPostNewRequestBody = async (body) => {
   // Validate unexpected attributes
   const allowedAttributes = ['email', 'password'];
   const unexpectedAttributesValidation = validateUnexpectedAttributes(body, allowedAttributes);
@@ -36,4 +36,4 @@ const validateUserRequestBody = async (body) => {
   return { valid: true };
 };
 
-export default validateUserRequestBody;
+export default validateUserPostNewRequestBody;

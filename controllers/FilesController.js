@@ -5,10 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { FILE_TYPES } from '../utils/fileTypes';
-import { ROOT_FOLDER_ID, validateFileRequestBody } from '../utils/validateFileRequestBody';
 import { saveFile, streamFile } from '../utils/fileStorage';
-import paginateCollection from '../utils/paginateCollection';
+import paginateCollection from '../helpers/paginateCollection';
 import redisClient from '../utils/redis';
+import { ROOT_FOLDER_ID } from '../helpers/validateFilePostUploadRequestBody';
 
 /**
  * @typedef {Object} FileData
@@ -32,9 +32,6 @@ class FilesController {
    */
   static async postUpload(req, res) {
     const { userId, body } = req;
-
-    const validation = await validateFileRequestBody(body);
-    if (!validation.valid) return res.status(400).json({ error: validation.err });
 
     const fileData = {
       userId: ObjectId(userId),
