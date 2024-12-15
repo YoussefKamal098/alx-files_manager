@@ -1,9 +1,11 @@
 import { ObjectId } from 'mongodb';
 
 import dbClient from '../utils/db';
-import { FILE_TYPES, isValidFileType } from '../utils/fileTypes';
 import formatBytes from '../utils/formatUtils';
 import validateUnexpectedAttributes from '../utils/validation';
+import {
+  FILE_TYPES, ROOT_FOLDER_ID, MAX_FILE_SIZE, isValidFileType,
+} from '../config';
 
 /**
  * Validation result structure.
@@ -13,10 +15,8 @@ import validateUnexpectedAttributes from '../utils/validation';
  */
 
 // Constants
-const ROOT_FOLDER_ID = '0'; // Default root folder ID, can be set to UUID format if needed
 const MAX_NAME_FILE_LENGTH = 255; // Maximum length for file/folder names
 const INVALID_FILE_NAME_CHARACTERS = /[<>:"/\\|?*]/; // Invalid characters for filenames
-const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2 GB in bytes
 const BASE64_REGEX = /^(?:[A-Z0-9+/]{4})*(?:[A-Z0-9+/]{2}==|[A-Z0-9+/]{3}=)?$/i;
 
 /**

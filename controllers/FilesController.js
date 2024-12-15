@@ -1,14 +1,15 @@
 import { promises as fsPromises } from 'fs';
-import mime from 'mime-types';
-
 import { v4 as uuidv4 } from 'uuid';
+import mime from 'mime-types';
 import { ObjectId } from 'mongodb';
+
 import dbClient from '../utils/db';
-import { FILE_TYPES } from '../utils/fileTypes';
+import redisClient from '../utils/redis';
+
 import { saveFile, streamFile } from '../utils/fileStorage';
 import paginateCollection from '../helpers/paginateCollection';
-import redisClient from '../utils/redis';
-import { ROOT_FOLDER_ID } from '../helpers/validateFilePostUploadRequestBody';
+
+import { FILE_TYPES, ROOT_FOLDER_ID } from '../config';
 
 /**
  * @typedef {Object} FileData

@@ -2,10 +2,10 @@ import fs, { promises as fsPromises } from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { FOLDER_PATH } from '../config';
+
 const mkdirAsync = promisify(fs.mkdir);
 const writeFileAsync = promisify(fs.writeFile);
-
-const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 
 /**
  * Ensures the existence of the storage folder.

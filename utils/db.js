@@ -1,5 +1,7 @@
 import { MongoClient } from 'mongodb';
 
+import { DB_HOST, DB_PORT, DB_DATABASE } from '../config';
+
 /**
  * Class representing a MongoDB client.
  * This class handles the connection to the MongoDB database and provides methods
@@ -13,9 +15,9 @@ class DBClient {
    * @throws {Error} If the connection to MongoDB fails.
    */
   constructor() {
-    this.host = process.env.DB_HOST || 'localhost';
-    this.port = process.env.DB_PORT || 27017;
-    this.database = process.env.DB_DATABASE || 'files_manager';
+    this.host = DB_HOST;
+    this.port = DB_PORT;
+    this.database = DB_DATABASE;
     this.client = null;
     this.db = null;
 
