@@ -92,7 +92,7 @@ const validateParent = async (parentId) => {
   try {
     ObjectId(parentId);
   } catch (error) {
-    return { valid: false, err: 'Invalid parent id' };
+    return { valid: false, err: 'Parent not found' };
   }
 
   const filesCollection = await dbClient.filesCollection();
@@ -149,12 +149,12 @@ const validateFileRequestBody = async (body) => {
   // Additional file-specific validation
   if (type !== FILE_TYPES.FOLDER) {
     const base64Validation = validateBase64(data);
-    if (!base64Validation.valid) return { valid: false, err: 'Invalid Base64-encoded data' };
+    if (!base64Validation.valid) return { valid: false, err: base64Validation.err };
   }
 
   // Validate the parent folder
   const parentValidation = await validateParent(parentId);
-  if (!parentValidation.valid) return { valid: false, err: 'Invalid parent folder' };
+  if (!parentValidation.valid) return { valid: false, err: parentValidation.err };
 
   // If all validations pass
   return { valid: true };
