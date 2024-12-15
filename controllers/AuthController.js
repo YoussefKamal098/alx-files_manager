@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+
 import dbClient from '../utils/db';
 import redisClient from '../utils/redis';
 import { verifyPasswordSha1 } from '../utils/hashUtils';
@@ -20,14 +21,14 @@ class AuthController {
       const { email, password } = await AuthController.authenticate(req);
 
       const user = await AuthController.findUserByEmail(email);
-      if (!user || !AuthController.isPasswordValid(password, user.password)) {
-        return AuthController.unauthorizedResponse(res);
+      if (!user || !verifyPasswordSha1(password, user.password)) {
+        return res.status(401).json({ error: 'Unauthorized' });
       }
 
       const token = await AuthController.generateToken(user._id);
       return res.status(200).json({ token });
     } catch (error) {
-      return AuthController.unauthorizedResponse(res);
+      return res.status(401).json({ error: 'Unauthorized' });
     }
   }
 
@@ -41,7 +42,7 @@ class AuthController {
     const token = req.headers['x-token'];
 
     if (!token) {
-      return AuthController.unauthorizedResponse(res);
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // Remove the token from Redis
@@ -80,17 +81,6 @@ class AuthController {
   }
 
   /**
-   * Validates if the provided password matches the stored password.
-   *
-   * @param {string} providedPassword - The password provided by the user.
-   * @param {string} storedPassword - The password stored in the database.
-   * @returns {boolean} - True if passwords match, false otherwise.
-   */
-  static isPasswordValid(providedPassword, storedPassword) {
-    return verifyPasswordSha1(providedPassword, storedPassword);
-  }
-
-  /**
    * Generates a token and stores it in Redis for 24 hours.
    *
    * @param {string} userId - The user's ID.
@@ -100,13 +90,6 @@ class AuthController {
     const token = uuidv4();
     await redisClient.set(`auth_${token}`, userId.toString(), 24 * 60 * 60); // 86400 seconds = 24 hours
     return token;
-  }
-
-  /**
-   * Sends an unauthorized response.
-   */
-  static unauthorizedResponse(res) {
-    return res.status(401).json({ error: 'Unauthorized' });
   }
 }
 

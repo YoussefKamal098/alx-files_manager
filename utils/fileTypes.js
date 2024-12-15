@@ -1,11 +1,11 @@
 /**
  * Constants for file types.
  */
-const FILE_TYPES = {
+const FILE_TYPES = Object.freeze({
   FOLDER: 'folder',
   FILE: 'file',
   IMAGE: 'image',
-};
+});
 
 /**
  * Validates if the given type is a valid file type.

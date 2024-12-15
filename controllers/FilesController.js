@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ObjectId } from 'mongodb';
 import dbClient from '../utils/db';
 import { FILE_TYPES } from '../utils/fileTypes';
-import { ROOT_FOLDER_ID, validateFileRequest } from '../utils/fileValidation';
+import { ROOT_FOLDER_ID, validateFileRequestBody } from '../utils/fileValidation';
 import { saveFile, streamFile } from '../utils/fileStorage';
 import paginateCollection from '../utils/paginateCollection';
 import redisClient from '../utils/redis';
@@ -31,32 +31,26 @@ class FilesController {
    * @returns {Promise<object>} Express response object.
    */
   static async postUpload(req, res) {
-    const { userId } = req;
-    const {
-      name, type, parentId = ROOT_FOLDER_ID, isPublic = false, data,
-    } = req.body;
+    const { userId, body } = req;
 
-    const validation = await FilesController.validateRequest({
-      name, type, data, parentId, isPublic,
-    });
-
+    const validation = await validateFileRequestBody(body);
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
+      return res.status(400).json({ error: validation.err });
     }
 
     const fileData = {
       userId: ObjectId(userId),
-      name,
-      type,
-      isPublic,
-      parentId: FilesController.formatParentId(parentId),
+      name: body.name,
+      type: body.type,
+      isPublic: body.isPublic !== undefined,
+      parentId: FilesController.formatParentId(body.parentId),
     };
 
-    if (type === FILE_TYPES.FOLDER) {
+    if (body.type === FILE_TYPES.FOLDER) {
       return FilesController.createFolder(fileData, res);
     }
 
-    return FilesController.createFile(fileData, data, res);
+    return FilesController.createFile(fileData, body.data, res);
   }
 
   /**
@@ -72,7 +66,7 @@ class FilesController {
     try {
       ObjectId(fileId);
     } catch (error) {
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: 'Invalid file id' });
     }
 
     try {
@@ -115,7 +109,7 @@ class FilesController {
       ObjectId(parentId);
     } catch (error) {
       if (parentId !== ROOT_FOLDER_ID) {
-        return res.status(404).json({ error: 'Parent not found' });
+        return res.status(404).json({ error: 'Invalid parent id' });
       }
     }
 
@@ -157,7 +151,7 @@ class FilesController {
     try {
       ObjectId(fileId);
     } catch (error) {
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: 'Invalid file id' });
     }
 
     try {
@@ -192,7 +186,7 @@ class FilesController {
     try {
       ObjectId(fileId);
     } catch (error) {
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: 'Invalid file id' });
     }
 
     try {
@@ -227,7 +221,7 @@ class FilesController {
     try {
       ObjectId(fileId);
     } catch (error) {
-      return res.status(404).json({ error: 'Not found' });
+      return res.status(404).json({ error: 'Invalid file id' });
     }
 
     try {
@@ -292,36 +286,14 @@ class FilesController {
   }
 
   /**
-   * Validates the file request.
-   *
-   * @param {Object} params - The request parameters.
-   * @param {string} params.name - The name of the file/folder.
-   * @param {string} params.type - The type of the file (e.g., 'file', 'folder').
-   * @param {string} [params.data] - The base64 file data (if a file).
-   * @param {string} [params.parentId=ROOT_FOLDER_ID] -
-   *  The ID of the parent folder (default to ROOT_FOLDER_ID).
-   * @param {boolean} [isPublic=false] - THe visibility of file (default to false).
-   * @returns {Promise<ValidationResult>} Validation result.
-   */
-  static async validateRequest({
-    name, type, data, parentId = ROOT_FOLDER_ID, isPublic = false,
-  }) {
-    const fileValidation = await validateFileRequest({
-      name, type, data, parentId, isPublic,
-    });
-    if (!fileValidation.valid) return { valid: false, error: fileValidation.error };
-
-    return { valid: true };
-  }
-
-  /**
    * Formats the parentId, ensuring ROOT_FOLDER_ID is handled correctly.
    *
-   * @param {string} parentId - Parent folder ID.
+   * @param {string | undefined} parentId - Parent folder ID.
    * @returns {string} Formatted parent ID.
    */
   static formatParentId(parentId) {
-    return parentId === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : new ObjectId(parentId);
+    const id = !parentId ? ROOT_FOLDER_ID : parentId.toString();
+    return id === ROOT_FOLDER_ID ? ROOT_FOLDER_ID : new ObjectId(id);
   }
 
   /**
