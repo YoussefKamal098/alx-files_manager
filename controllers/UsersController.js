@@ -20,7 +20,7 @@ class UsersController {
       if (!email) return res.status(400).json({ error: 'Missing email' });
       if (!password) return res.status(400).json({ error: 'Missing password' });
       if (typeof email !== 'string') return res.status(400).json({ error: 'Invalid email' });
-      if (typeof password === 'string') return res.status(400).json({ error: 'Invalid password' });
+      if (typeof password !== 'string') return res.status(400).json({ error: 'Invalid password' });
 
       // Check if user already exists
       const existingUser = await UsersController.checkIfUserExists(email);
