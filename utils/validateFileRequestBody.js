@@ -127,8 +127,8 @@ const validateFileRequestBody = async (body) => {
   if (typeof name !== 'string') return { valid: false, err: 'name attr must be a string value' };
   if (typeof type !== 'string') return { valid: false, err: 'type attr must be a string value' };
   if (!isValidFileType(type)) return { valid: false, err: 'Invalid file type' };
+  if (type !== FILE_TYPES.FOLDER && !data) return { valid: false, err: 'Missing data' };
   if (typeof isPublic !== 'boolean') return { valid: false, err: 'isPublic attr must be a boolean value' };
-  if (type !== FILE_TYPES.FOLDER && !data) return { valid: false, err: 'Missing data for file or image' };
 
   // Validate the name
   const nameValidation = validateFileName(name);
