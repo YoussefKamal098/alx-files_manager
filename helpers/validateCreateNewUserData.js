@@ -4,20 +4,20 @@ const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const PASSWORD_REGEX = /^(?=.*\d|.*[@$!%*?&]|.*[A-Z])[A-Za-z\d@$!%*?&]{8,}$/;
 
 /**
- * Validates the request data for creating a new user.
+ * Validates the object for creating a new user.
  *
- * @param {Record<string, any>} body - The request body to validate.
- * @param {string} body.email - The email of the user.
- * @param {string} body.password - The password for the user.
+ * @param {Record<string, any>} object - The object to validate.
+ * @param {string} object.email - The email of the user.
+ * @param {string} object.password - The password for the user.
  * @returns {Promise<ValidationResult>} The validation result.
  */
-const validateUserPostNewRequestBody = async (body) => {
+const validateCreateNewUserData = async (object) => {
   // Validate unexpected attributes
   const allowedAttributes = ['email', 'password'];
-  const unexpectedAttributesValidation = validateUnexpectedAttributes(body, allowedAttributes);
+  const unexpectedAttributesValidation = validateUnexpectedAttributes(object, allowedAttributes);
   if (!unexpectedAttributesValidation.valid) return unexpectedAttributesValidation;
 
-  const { email, password } = body;
+  const { email, password } = object;
 
   // Check if required fields are present
   if (!email) return { valid: false, err: 'Missing email' };
@@ -36,4 +36,4 @@ const validateUserPostNewRequestBody = async (body) => {
   return { valid: true };
 };
 
-export default validateUserPostNewRequestBody;
+export default validateCreateNewUserData;

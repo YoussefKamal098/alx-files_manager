@@ -97,20 +97,20 @@ const validateParentId = async (parentId) => {
 };
 
 /**
- * Validates the request data for creating a file or folder.
+ * Validates the object for creating a file or folder.
  *
- * @param {Record<string, any>} body - The request body to validate.
- * @param {string} body.name - The name of the file or folder.
- * @param {string} body.type - The type of the file (folder, file, or image).
- * @param {string} [body.data] - The Base64-encoded content of the file (required for file/image).
- * @param {string} [body.parentId=ROOT_FOLDER_ID] -
+ * @param {Record<string, any>} object - The object to validate
+ * @param {string} object.name - The name of the file or folder.
+ * @param {string} object.type - The type of the file (folder, file, or image).
+ * @param {string} [object.data] - The Base64-encoded content of the file (required for file/image).
+ * @param {string} [object.parentId=ROOT_FOLDER_ID] -
  *  The ID of the parent folder (default to ROOT_FOLDER_ID).
- * @param {boolean} [body.isPublic=false] - The visibility of the file (default to false).
+ * @param {boolean} [object.isPublic=false] - The visibility of the file (default to false).
  * @returns {Promise<ValidationResult>} The validation result.
  */
-const validateFilePostUploadRequestBody = async (body) => {
+const validateCreateNewFileData = async (object) => {
   const allowedAttributes = ['name', 'type', 'data', 'parentId', 'isPublic'];
-  const unexpectedAttributesValidation = validateUnexpectedAttributes(body, allowedAttributes);
+  const unexpectedAttributesValidation = validateUnexpectedAttributes(object, allowedAttributes);
   if (!unexpectedAttributesValidation.valid) return unexpectedAttributesValidation;
 
   const {
@@ -119,7 +119,7 @@ const validateFilePostUploadRequestBody = async (body) => {
     data,
     parentId = ROOT_FOLDER_ID,
     isPublic = false,
-  } = body;
+  } = object;
 
   // Validate required fields
   if (!name) return { valid: false, err: 'Missing name' };
@@ -154,4 +154,4 @@ const validateFilePostUploadRequestBody = async (body) => {
 };
 
 export { ROOT_FOLDER_ID };
-export default validateFilePostUploadRequestBody;
+export default validateCreateNewFileData;
